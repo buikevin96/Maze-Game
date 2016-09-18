@@ -7,37 +7,46 @@
 //
 
 import SpriteKit
+import CoreMotion
 
-class GameScene: SKScene {
+class GameScene: SKScene, SKPhysicsContactDelegate {
+    
+    let manager = CMMotionManager()
+    var player = SKSpriteNode()
+    var endNode = SKSpriteNode()
+    
     override func didMoveToView(view: SKView) {
         /* Setup your scene here */
-        let myLabel = SKLabelNode(fontNamed:"Chalkduster")
-        myLabel.text = "Hello, World!"
-        myLabel.fontSize = 45
-        myLabel.position = CGPoint(x:CGRectGetMidX(self.frame), y:CGRectGetMidY(self.frame))
         
-        self.addChild(myLabel)
+        self.physicsWorld.contactDelegate = self
+        
+        player = self.childNodeWithName("player") as! SKSpriteNode
+        
+        endNode = self.childNodeWithName("endNode") as! SKSpriteNode
+        
+        manager.startAccelerometerUpdates() // Starting accelerometer and grab data from manager
+        manager.accelerometerUpdateInterval = 0.1 // Every 10th of second, grab data coming from device
+        manager.startAccelerometerUpdatesToQueue(NSOperationQueue.mainQueue()) {
+            (data, error) in
+            
+            self.physicsWorld.gravity = CGVectorMake(CGFloat((data?.acceleration.x)!) * 10, CGFloat((data?.acceleration.y)!) * 10)
+            
+        }
+        
     }
     
-    override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
-       /* Called when a touch begins */
+    func didBeginContact(contact: SKPhysicsContact) {
+        let bodyA = contact.bodyA
+        let bodyB = contact.bodyB
         
-        for touch in touches {
-            let location = touch.locationInNode(self)
+        if bodyA.categoryBitMask == 1 && bodyB.categoryBitMask == 2 || bodyA.categoryBitMask == 2 && bodyB.categoryBitMask == 1 {
             
-            let sprite = SKSpriteNode(imageNamed:"Spaceship")
-            
-            sprite.xScale = 0.5
-            sprite.yScale = 0.5
-            sprite.position = location
-            
-            let action = SKAction.rotateByAngle(CGFloat(M_PI), duration:1)
-            
-            sprite.runAction(SKAction.repeatActionForever(action))
-            
-            self.addChild(sprite)
+            // EndScene 
+            print("You Won!")
         }
     }
+    
+
    
     override func update(currentTime: CFTimeInterval) {
         /* Called before each frame is rendered */
